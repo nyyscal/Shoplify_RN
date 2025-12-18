@@ -12,10 +12,10 @@ const app = express();
 app.use(express.json());
 app.use(clerkMiddleware());
 
-// Inngest route (without /api prefix)
+// Inngest route
 app.use("/inngest", serve({ client: inngest, functions }));
 
-// Health check (remove /api prefix for Vercel routing)
+// Health check
 app.get("/health", (req, res) => {
   res.status(200).json({ message: "Success" });
 });
@@ -25,9 +25,18 @@ app.get("/", (req, res) => {
   res.send("<h1>Welcome to My API & Admin Dashboard Project</h1><p>Use /api/health to check backend.</p>");
 });
 
-// Serve React admin **locally only** if needed
-if (ENV.NODE_ENV === "production") {
-  app.use("/admin", express.static(path.join(__dirname, "../admin/dist")));
+// === SERVE ADMIN STATIC FILES ONLY LOCALLY ===
+const isVercel = Boolean(process.env.VERCEL);
+
+if (!isVercel) {
+  // Local development/preview: serve built admin files via Express
+  const adminDistPath = path.join(__dirname, "../admin/dist");
+  app.use("/admin", express.static(adminDistPath));
+  
+  // Fallback for React Router (client-side routes) - only needed locally
+  app.get("/admin/*", (req, res) => {
+    res.sendFile(path.join(adminDistPath, "index.html"));
+  });
 }
 
 // DB connection
@@ -39,8 +48,7 @@ const connectDBOnce = async () => {
   }
 };
 
-// Local server
-const isVercel = Boolean(process.env.VERCEL);
+// Local server only
 if (!isVercel) {
   const startServer = async () => {
     await connectDBOnce();
@@ -49,7 +57,7 @@ if (!isVercel) {
   startServer();
 }
 
-// Export for Vercel
+// Export for Vercel serverless
 export default async function handler(req, res) {
   await connectDBOnce();
   app(req, res);
