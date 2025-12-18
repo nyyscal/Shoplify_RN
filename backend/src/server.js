@@ -18,6 +18,11 @@ app.get("/api/health", (req, res) => {
   res.status(200).json({ message: "Success" });
 });
 
+// Optional: Home page for backend root
+app.get("/", (req, res) => {
+  res.send("<h1>Welcome to My API & Admin Dashboard Project</h1><p>Use /api/health to check backend.</p>");
+});
+
 // Serve React admin in production locally (optional)
 if (ENV.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../admin/dist")));
