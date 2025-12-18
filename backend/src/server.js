@@ -11,24 +11,23 @@ const app = express();
 // Middleware
 app.use(express.json());
 app.use(clerkMiddleware());
-app.use("/api/inngest", serve({ client: inngest, functions }));
 
-// Health check
-app.get("/api/health", (req, res) => {
+// Inngest route (without /api prefix)
+app.use("/inngest", serve({ client: inngest, functions }));
+
+// Health check (remove /api prefix for Vercel routing)
+app.get("/health", (req, res) => {
   res.status(200).json({ message: "Success" });
 });
 
-// Optional: Home page for backend root
+// Home page
 app.get("/", (req, res) => {
   res.send("<h1>Welcome to My API & Admin Dashboard Project</h1><p>Use /api/health to check backend.</p>");
 });
 
-// Serve React admin in production locally (optional)
+// Serve React admin **locally only** if needed
 if (ENV.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "../admin/dist")));
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(__dirname, "../admin/dist/index.html"));
-  });
+  app.use("/admin", express.static(path.join(__dirname, "../admin/dist")));
 }
 
 // DB connection
@@ -40,16 +39,12 @@ const connectDBOnce = async () => {
   }
 };
 
-// Detect if running on Vercel (serverless)
+// Local server
 const isVercel = Boolean(process.env.VERCEL);
-
 if (!isVercel) {
-  // Local server
   const startServer = async () => {
     await connectDBOnce();
-    app.listen(ENV.PORT, () => {
-      console.log(`Server running at http://localhost:${ENV.PORT}`);
-    });
+    app.listen(ENV.PORT, () => console.log(`Server running at http://localhost:${ENV.PORT}`));
   };
   startServer();
 }
